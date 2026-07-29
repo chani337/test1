@@ -1,14 +1,14 @@
-name: Deploy Backend
+name: Deploy mood project
 
 on:
   push:
     branches: [ main ]
 
 jobs:
-  deploy:
+  deploy-backend:
     runs-on: ubuntu-latest
     steps:
-      - name: SSH into Private server via Public server (bastion) and redeploy
+      - name: SSH into Private server via Public server (bastion) and redeploy backend
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.PRIVATE_HOST }}
@@ -21,3 +21,26 @@ jobs:
             cd ~/cloudpj
             git pull
             docker compose -f docker-compose.local.yml up -d --build backend
+
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH into Public server and redeploy frontend
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PUBLIC_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd ~/cloudpj
+            git pull
+            docker rm -f mood-frontend
+            docker build -t mood-frontend ./frontend
+            docker run -d \
+              -p 80:80 -p 443:443 \
+              -e DOMAIN=${{ secrets.DOMAIN }} \
+              -e BACKEND_HOST=${{ secrets.BACKEND_HOST }} \
+              -v /etc/letsencrypt:/etc/letsencrypt:ro \
+              --restart unless-stopped \
+              --name mood-frontend \
+              mood-frontend
