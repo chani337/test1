@@ -5,34 +5,34 @@ on:
     branches: [ main ]
 
 jobs:
-  deploy-backend:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: SSH into Private server via Public server (bastion) and redeploy backend
+      - name: Prepare SSH key
+        run: |
+          echo "${{ secrets.SSH_KEY }}" | base64 -d > /tmp/deploy_key
+          chmod 600 /tmp/deploy_key
+
+      - name: 1) Redeploy backend (Private 서버, Public 서버 경유)
         uses: appleboy/ssh-action@v1.0.3
         with:
-          debug: true
           host: ${{ secrets.PRIVATE_HOST }}
           username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
+          key_path: /tmp/deploy_key
           proxy_host: ${{ secrets.PUBLIC_HOST }}
           proxy_username: ${{ secrets.SSH_USER }}
-          proxy_key: ${{ secrets.SSH_KEY }}
+          proxy_key_path: /tmp/deploy_key
           script: |
             cd ~/cloudpj
             git pull
             docker compose -f docker-compose.local.yml up -d --build backend
 
-  deploy-frontend:
-    runs-on: ubuntu-latest
-    steps:
-      - name: SSH into Public server and redeploy frontend
+      - name: 2) Redeploy frontend (Public 서버)
         uses: appleboy/ssh-action@v1.0.3
         with:
-          debug: true
           host: ${{ secrets.PUBLIC_HOST }}
           username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
+          key_path: /tmp/deploy_key
           script: |
             cd ~/cloudpj
             git pull
