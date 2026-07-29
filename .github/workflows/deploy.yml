@@ -23,7 +23,7 @@ jobs:
           proxy_username: ${{ secrets.SSH_USER }}
           proxy_key_path: ${{ github.workspace }}/deploy_key
           script: |
-            cd ~/cloudpj
+            cd ~/test1
             git pull
             docker compose -f docker-compose.local.yml up -d --build backend
 
@@ -34,7 +34,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key_path: ${{ github.workspace }}/deploy_key
           script: |
-            cd ~/cloudpj
+            cd ~/test1
             git pull
             docker rm -f mood-frontend
             docker build -t mood-frontend ./frontend
